@@ -1,0 +1,8 @@
+CREATE TABLE url (
+    id BIGSERIAL PRIMARY KEY,
+    original_url TEXT NOT NULL UNIQUE,
+    short_code VARCHAR(16) NOT NULL UNIQUE,
+    accesses_count BIGINT NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
