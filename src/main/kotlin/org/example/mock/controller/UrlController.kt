@@ -1,5 +1,6 @@
 package org.example.mock.controller
 
+import org.example.mock.dto.CreateShortUrlRequest
 import org.example.mock.entity.Url
 import org.example.mock.service.UrlService
 import org.springframework.http.HttpStatus
@@ -17,8 +18,8 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/shorten")
 class UrlController(private val urlService: UrlService) {
     @PostMapping
-    fun shortenUrl(@RequestBody url: String): ResponseEntity<Url> {
-        return ResponseEntity.status(HttpStatus.CREATED).body(urlService.shortenUrl(url))
+    fun shortenUrl(@RequestBody request: CreateShortUrlRequest): ResponseEntity<Url> {
+        return ResponseEntity.status(HttpStatus.CREATED).body(urlService.shortenUrl(request.url))
     }
 
     @GetMapping("/{code}")
