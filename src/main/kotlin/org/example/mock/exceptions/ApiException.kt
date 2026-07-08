@@ -30,3 +30,15 @@ class InvalidCodeException(message: String) : ApiException(
     HttpStatus.BAD_REQUEST,
     "INVALID_CODE"
 )
+
+class InvalidPasswordException(message: String) : ApiException(
+    message,
+    HttpStatus.BAD_REQUEST,
+    "INVALID_PASSWORD"
+)
+
+class InvalidCredentialsException() : ApiException(
+    "Invalid username or password",
+    HttpStatus.UNAUTHORIZED,
+    "INVALID_CREDENTIALS"
+)

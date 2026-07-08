@@ -24,7 +24,7 @@ class UserRepository(private val jdbc: NamedParameterJdbcTemplate) {
             INSERT INTO users (name, username, password_hash)
             VALUES (:name, :username, :passwordHash)
             RETURNING *
-        """, mapOf("name" to name, "username" to username, passwordHash to passwordHash), rowMapper)
+        """, mapOf("name" to name, "username" to username, "passwordHash" to passwordHash), rowMapper)
 
     fun getUserById(id: Long): User =
         jdbc.queryForObject("""
