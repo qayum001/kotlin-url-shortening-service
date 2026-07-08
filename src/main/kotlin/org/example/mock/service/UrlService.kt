@@ -3,7 +3,6 @@ package org.example.mock.service
 import org.example.mock.entity.Url
 import org.example.mock.repository.UrlRepository
 import org.springframework.stereotype.Service
-import kotlin.time.Clock
 
 object RandomCode {
     private const val CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
@@ -15,7 +14,7 @@ object RandomCode {
 @Service
 class UrlService(private val repository: UrlRepository) {
     fun shortenUrl(originalUrl: String): Url {
-        val uniqueCode = generateUniqueCode();
+        val uniqueCode = generateUniqueCode()
         val url = repository.insert(originalUrl, uniqueCode)
         return url
     }
@@ -27,7 +26,7 @@ class UrlService(private val repository: UrlRepository) {
     }
 
     fun updateShortUrl(code: String, newUrl: String): Url {
-        return repository.updateUrl(code, newUrl, Clock.System.now())
+        return repository.updateUrl(code, newUrl)
     }
 
     fun getUrlAccessesCount(code: String): Url {
