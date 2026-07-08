@@ -63,7 +63,7 @@ class UrlRepository(private val jdbc: NamedParameterJdbcTemplate) {
         """, mapOf("code" to code)) > 0
     }
 
-    fun isExists(shortCode: String): Boolean =
+    fun isExistsByCode(shortCode: String): Boolean =
         jdbc.queryForObject(
             """
                 SELECT EXISTS(SELECT 1 FROM url where short_code = :shortCode)
@@ -71,4 +71,10 @@ class UrlRepository(private val jdbc: NamedParameterJdbcTemplate) {
             mapOf("shortCode" to shortCode),
             Boolean::class.java
         )!!
+
+    fun isExistsByUrl(url: String): Boolean =
+        jdbc.queryForObject("""
+            SELECT EXISTS(SELECT 1 FROM url where original_url = :url)
+        """, mapOf("url" to url), Boolean::class.java)!!
+
 }

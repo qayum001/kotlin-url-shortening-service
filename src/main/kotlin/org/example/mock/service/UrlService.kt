@@ -40,7 +40,7 @@ class UrlService(private val repository: UrlRepository) {
     private fun generateUniqueCode(): String {
         while (true) {
             val code = RandomCode.generate(6)
-            val isExists = repository.isExists(code)
+            val isExists = repository.isExistsByCode(code)
             if (!isExists) {
                 return code
             }

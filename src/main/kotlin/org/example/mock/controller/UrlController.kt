@@ -17,8 +17,8 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/shorten")
 class UrlController(private val urlService: UrlService) {
     @PostMapping
-    fun shortenUrl(@RequestBody shortUrl: String): ResponseEntity<Url> {
-        return ResponseEntity.status(HttpStatus.CREATED).body(urlService.shortenUrl(shortUrl))
+    fun shortenUrl(@RequestBody url: String): ResponseEntity<Url> {
+        return ResponseEntity.status(HttpStatus.CREATED).body(urlService.shortenUrl(url))
     }
 
     @GetMapping("/{code}")
@@ -33,12 +33,12 @@ class UrlController(private val urlService: UrlService) {
 
     @GetMapping("/{code}/stats")
     fun getStats(@PathVariable code: String): ResponseEntity<Url> {
-        return ResponseEntity.status(HttpStatus.OK).body(urlService.getUrlAccessesCount(code));
+        return ResponseEntity.status(HttpStatus.OK).body(urlService.getUrlAccessesCount(code))
     }
 
     @DeleteMapping("/{code}")
     fun deleteUrl(@PathVariable code: String): ResponseEntity<Void> {
         urlService.deleteUrl(code)
-        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+        return ResponseEntity.status(HttpStatus.NO_CONTENT).build()
     }
 }
