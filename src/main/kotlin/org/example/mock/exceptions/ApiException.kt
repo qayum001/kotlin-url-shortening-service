@@ -24,3 +24,9 @@ class AlreadyExistsException(url: String) : ApiException(
     HttpStatus.CONFLICT,
     "ALREADY_EXISTS"
 )
+
+class InvalidCodeException(message: String) : ApiException(
+    message,
+    HttpStatus.BAD_REQUEST,
+    "INVALID_CODE"
+)

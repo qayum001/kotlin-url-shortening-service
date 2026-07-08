@@ -23,7 +23,7 @@ class UrlController(private val urlService: UrlService) {
 
     @GetMapping("/{code}")
     fun getOriginalUrl(@PathVariable code: String): ResponseEntity<String> {
-        return ResponseEntity.status(HttpStatus.OK).body(urlService.getOriginalUrl(code))
+        return ResponseEntity.status(HttpStatus.OK).body(urlService.getUrl(code))
     }
 
     @PutMapping("/{code}")
