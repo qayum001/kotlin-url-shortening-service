@@ -2,15 +2,6 @@ spring:
   application:
     name: Mock
 
-  logging:
-    level:
-      org.flywaydb: DEBUG
-  debug: true
-
-  jpa:
-    hibernate:
-      ddl-auto: none
-
   datasource:
     url: jdbc:postgresql://localhost:5432/mock
     username: ${DB_USERNAME:postgres}
@@ -30,3 +21,8 @@ spring:
 jwt:
   secret: ${JWT_SECRET:Q09nfCQwRi9mO1JmfTx2MSRATWM1ajdNInI/MCZCX1BGd1JuLldHdy41JVkgQn5yTntSbiMlNDVdWTpRKGEiKVRYY2w8LHE=}
   expiration-ms: 3600000
+
+springdoc:
+  api-docs:
+    enabled: true
+    path: /v3/api-docs

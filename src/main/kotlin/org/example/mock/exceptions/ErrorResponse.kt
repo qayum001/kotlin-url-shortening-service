@@ -1,10 +1,10 @@
 package org.example.mock.exceptions
 
-import kotlin.time.Clock
-import kotlin.time.Instant
+import java.time.Instant
+
 
 data class ErrorResponse(
-    val time: Instant = Clock.System.now(),
+    val time: Instant = Instant.now(),
     val status: Int,
     val error: String = "Error",
     val code: String = "UNKNOWN",

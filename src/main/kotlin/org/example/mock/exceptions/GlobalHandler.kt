@@ -7,7 +7,7 @@ import org.springframework.http.converter.HttpMessageNotReadableException
 import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
-import kotlin.time.Clock
+import java.time.Instant
 
 @RestControllerAdvice
 class GlobalHandler {
@@ -24,12 +24,6 @@ class GlobalHandler {
     fun handleHttpMessageNotReadableException(e: HttpMessageNotReadableException): ResponseEntity<ErrorResponse> {
         logger.warn("HttpMessageNotReadableException: ${e.message}")
         return buildResponse(HttpStatus.NOT_IMPLEMENTED, "MALFOLDED_REQUEST", e.message ?: "Error")
-    }
-
-    @ExceptionHandler(MethodArgumentNotValidException::class)
-    fun handleMethodArgumentNotValidException(e: MethodArgumentNotValidException): ResponseEntity<ErrorResponse> {
-        logger.warn("MethodArgumentNotValidException: ${e.message}")
-        return buildResponse(HttpStatus.BAD_REQUEST, "INVALID_ARGUMENT", e.message)
     }
 
     @ExceptionHandler(Exception::class)
@@ -52,7 +46,7 @@ class GlobalHandler {
         errorMessage: String): ResponseEntity<ErrorResponse> {
         return ResponseEntity.status(status).body(
             ErrorResponse(
-                time = Clock.System.now(),
+                time = Instant.now(),
                 status = status.value(),
                 error = status.reasonPhrase,
                 code = errorCode,
