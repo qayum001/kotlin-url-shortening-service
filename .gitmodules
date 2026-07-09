@@ -1,0 +1,3 @@
+[submodule "url-shortening-web-client"]
+	path = url-shortening-web-client
+	url = https://github.com/qayum001/url-shortening-web-client

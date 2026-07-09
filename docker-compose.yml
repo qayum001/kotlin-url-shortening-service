@@ -30,11 +30,49 @@ services:
       KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
       KC_DB_USERNAME: postgres
       KC_DB_PASSWORD: postgres
+      # Pin the public frontend URL so tokens always carry a stable issuer
+      # (http://localhost:8083/realms/mock) whether the token endpoint is hit by
+      # the browser or by the web container proxying to keycloak:8080 internally.
+      KC_HOSTNAME: http://localhost:8083
     ports:
       - "8083:8080"
     depends_on:
       postgres:
         condition: service_healthy
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: mock-app
+    restart: unless-stopped
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/mock
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      # Validate the issuer the browser's tokens carry, but fetch signing keys
+      # from Keycloak over the internal network (localhost:8083 is unreachable here).
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://localhost:8083/realms/mock
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://keycloak:8080/realms/mock/protocol/openid-connect/certs
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+
+  web:
+    build:
+      context: ./url-shortening-web-client
+      dockerfile: Dockerfile
+    container_name: mock-web
+    restart: unless-stopped
+    ports:
+      - "5173:80"
+    depends_on:
+      - app
+      - keycloak
 
 volumes:
   postgres_data:
