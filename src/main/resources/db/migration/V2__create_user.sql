@@ -1,11 +1,10 @@
 CREATE TABLE users (
-    id              BIGSERIAL PRIMARY KEY,
-    name            VARCHAR(255) NOT NULL,
-    username        VARCHAR(18) NOT NULL UNIQUE
-                    CHECK (CHAR_LENGTH(username) BETWEEN 6 AND 18),
-    password_hash   TEXT NOT NULL,
-    created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    id          BIGSERIAL PRIMARY KEY,
+    keycloak_id UUID NOT NULL UNIQUE,
+    username    VARCHAR(18) NOT NULL,
+    name        VARCHAR(100),
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE TABLE user_urls (

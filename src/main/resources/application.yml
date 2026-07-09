@@ -2,6 +2,12 @@ spring:
   application:
     name: Mock
 
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8083/realms/mock
+
   datasource:
     url: jdbc:postgresql://localhost:5432/mock
     username: ${DB_USERNAME:postgres}

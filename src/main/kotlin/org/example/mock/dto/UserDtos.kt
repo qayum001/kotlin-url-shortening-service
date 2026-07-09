@@ -26,11 +26,15 @@ data class UserRegistrationDto(
 
 data class UserDto(private val user: User) {
     val id: Long = user.id
-    val name: String = user.name
+    val name: String? = user.name
     val username: String = user.username
     val createdAt: Instant = user.createdAt
     val updatedAt: Instant = user.updatedAt
 }
+
+data class UpdateNameRequest(
+    val name: String,
+)
 
 data class LoginCredentials(
     @field:NotBlank(message = "Username must not be blank")

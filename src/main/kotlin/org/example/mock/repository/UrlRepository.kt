@@ -28,7 +28,6 @@ class UrlRepository(private val jdbc: NamedParameterJdbcTemplate) {
             mapOf("url" to url, "shortCode" to shortCode),
             rowMapper,
         )
-
     fun getByCode(code: String): String =
         jdbc.queryForObject(
             """
