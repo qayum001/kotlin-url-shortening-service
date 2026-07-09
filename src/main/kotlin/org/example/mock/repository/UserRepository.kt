@@ -45,6 +45,7 @@ class UserRepository(private val jdbc: NamedParameterJdbcTemplate) {
             """
                 INSERT INTO user_urls (user_id, url_id)
                 VALUES (:userId, :urlId)
+                RETURNING user_id, url_id
             """, mapOf("userId" to userId, "urlId" to urlId),
             userUrlMapper
         )
