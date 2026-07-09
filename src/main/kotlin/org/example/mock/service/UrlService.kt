@@ -27,40 +27,54 @@ class UrlService(
 
     @Transactional
     fun shortenUrl(originalUrl: String, userId: Long): Url {
+        repository.findByUserIdAndOriginalUrl(userId, originalUrl)?.let { return it }
+
         val uniqueCode = generateUniqueCode()
         val url = repository.insert(originalUrl, uniqueCode)
         userRepository.connectUrlToUser(userId, url.id)
         return url
     }
 
-    fun getUrl(code: String): String {
+    fun listUserUrls(userId: Long): List<Url> = repository.findAllByUserId(userId)
+
+    fun resolveForRedirect(code: String): String {
         validateCode(code)
-        val res = repository.getByCode(code)
+        if (!repository.isExistsByCode(code)) {
+            throw UrlNotFoundException(code)
+        }
+        val target = repository.getByCode(code)
         repository.incrementAccessCount(code)
-        return res
+        return target
     }
 
-    fun updateShortUrl(code: String, newUrl: String): Url {
+    fun getUserUrl(userId: Long, code: String): String {
         validateCode(code)
+        verifyOwnership(userId, code)
+        return repository.getByCode(code)
+    }
+
+    fun updateShortUrl(userId: Long, code: String, newUrl: String): Url {
+        validateCode(code)
+        verifyOwnership(userId, code)
         return repository.updateUrl(code, newUrl)
     }
 
-    fun getUrlAccessesCount(code: String): Url {
+    fun getUrlAccessesCount(userId: Long, code: String): Url {
         validateCode(code)
-        if (!repository.isExistsByCode(code)) {
-            throw UrlNotFoundException(code)
-        }
-
+        verifyOwnership(userId, code)
         return repository.getAccesses(code)
     }
 
-    fun deleteUrl(code: String) {
+    fun deleteUrl(userId: Long, code: String) {
         validateCode(code)
-        if (!repository.isExistsByCode(code)) {
+        verifyOwnership(userId, code)
+        repository.delete(code)
+    }
+
+    private fun verifyOwnership(userId: Long, code: String) {
+        if (!repository.isOwnedByUser(userId, code)) {
             throw UrlNotFoundException(code)
         }
-
-        repository.delete(code)
     }
 
     private fun generateUniqueCode(): String {

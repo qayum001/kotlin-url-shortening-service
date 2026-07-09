@@ -30,31 +30,47 @@ class UrlController(
         @AuthenticationPrincipal jwt: Jwt,
         @Valid @RequestBody request: CreateShortUrlRequest
     ): ResponseEntity<Url> {
-        val user = userService.resolveKeycloakUser(jwt)
-        return ResponseEntity.status(HttpStatus.CREATED).body(urlService.shortenUrl(request.url, user.id))
+        return ResponseEntity.status(HttpStatus.CREATED).body(urlService.shortenUrl(request.url, currentUserId(jwt)))
+    }
+
+    @GetMapping
+    fun listMyUrls(@AuthenticationPrincipal jwt: Jwt): ResponseEntity<List<Url>> {
+        return ResponseEntity.status(HttpStatus.OK).body(urlService.listUserUrls(currentUserId(jwt)))
     }
 
     @GetMapping("/{code}")
-    fun getOriginalUrl(@PathVariable code: String): ResponseEntity<String> {
-        return ResponseEntity.status(HttpStatus.OK).body(urlService.getUrl(code))
+    fun getOriginalUrl(
+        @AuthenticationPrincipal jwt: Jwt,
+        @PathVariable code: String
+    ): ResponseEntity<String> {
+        return ResponseEntity.status(HttpStatus.OK).body(urlService.getUserUrl(currentUserId(jwt), code))
     }
 
     @PutMapping("/update/{code}")
     fun updateUrl(
+        @AuthenticationPrincipal jwt: Jwt,
         @PathVariable code: String,
         @Valid @RequestBody request: UpdateUrlRequest
     ): ResponseEntity<Url> {
-        return ResponseEntity.status(HttpStatus.OK).body(urlService.updateShortUrl(code, request.url))
+        return ResponseEntity.status(HttpStatus.OK).body(urlService.updateShortUrl(currentUserId(jwt), code, request.url))
     }
 
     @GetMapping("/{code}/stats")
-    fun getStats(@PathVariable code: String): ResponseEntity<Url> {
-        return ResponseEntity.status(HttpStatus.OK).body(urlService.getUrlAccessesCount(code))
+    fun getStats(
+        @AuthenticationPrincipal jwt: Jwt,
+        @PathVariable code: String
+    ): ResponseEntity<Url> {
+        return ResponseEntity.status(HttpStatus.OK).body(urlService.getUrlAccessesCount(currentUserId(jwt), code))
     }
 
     @DeleteMapping("/{code}")
-    fun deleteUrl(@PathVariable code: String): ResponseEntity<Void> {
-        urlService.deleteUrl(code)
+    fun deleteUrl(
+        @AuthenticationPrincipal jwt: Jwt,
+        @PathVariable code: String
+    ): ResponseEntity<Void> {
+        urlService.deleteUrl(currentUserId(jwt), code)
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build()
     }
+
+    private fun currentUserId(jwt: Jwt): Long = userService.resolveKeycloakUser(jwt).id
 }

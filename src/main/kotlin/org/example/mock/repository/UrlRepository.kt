@@ -28,6 +28,43 @@ class UrlRepository(private val jdbc: NamedParameterJdbcTemplate) {
             mapOf("url" to url, "shortCode" to shortCode),
             rowMapper,
         )
+
+    fun findAllByUserId(userId: Long): List<Url> =
+        jdbc.query(
+            """
+                SELECT u.* FROM url u
+                JOIN user_urls uu ON uu.url_id = u.id
+                WHERE uu.user_id = :userId
+                ORDER BY u.created_at DESC
+            """,
+            mapOf("userId" to userId),
+            rowMapper,
+        )
+
+    fun findByUserIdAndOriginalUrl(userId: Long, url: String): Url? =
+        jdbc.query(
+            """
+                SELECT u.* FROM url u
+                JOIN user_urls uu ON uu.url_id = u.id
+                WHERE uu.user_id = :userId AND u.original_url = :url
+                LIMIT 1
+            """,
+            mapOf("userId" to userId, "url" to url),
+            rowMapper,
+        ).firstOrNull()
+
+    fun isOwnedByUser(userId: Long, code: String): Boolean =
+        jdbc.queryForObject(
+            """
+                SELECT EXISTS(
+                    SELECT 1 FROM user_urls uu
+                    JOIN url u ON u.id = uu.url_id
+                    WHERE uu.user_id = :userId AND u.short_code = :code
+                )
+            """,
+            mapOf("userId" to userId, "code" to code),
+            Boolean::class.java,
+        )!!
     fun getByCode(code: String): String =
         jdbc.queryForObject(
             """
@@ -70,10 +107,5 @@ class UrlRepository(private val jdbc: NamedParameterJdbcTemplate) {
             mapOf("shortCode" to shortCode),
             Boolean::class.java
         )!!
-
-    fun isExistsByUrl(url: String): Boolean =
-        jdbc.queryForObject("""
-            SELECT EXISTS(SELECT 1 FROM url where original_url = :url)
-        """, mapOf("url" to url), Boolean::class.java)!!
 
 }

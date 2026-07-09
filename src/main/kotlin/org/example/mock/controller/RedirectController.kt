@@ -14,7 +14,7 @@ class RedirectController(private val urlService: UrlService) {
     @GetMapping("/{code}")
     fun redirect(@PathVariable code: String): ResponseEntity<Void> {
         return ResponseEntity.status(HttpStatus.FOUND)
-            .header(HttpHeaders.LOCATION, urlService.getUrl(code))
+            .header(HttpHeaders.LOCATION, urlService.resolveForRedirect(code))
             .build()
     }
 }
