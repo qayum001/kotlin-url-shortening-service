@@ -38,6 +38,14 @@ class GlobalHandler {
         return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, "UNKNOWN_ERROR", e.message ?: "Error")
     }
 
+    @ExceptionHandler(MethodArgumentNotValidException::class)
+    fun handleValidation(e: MethodArgumentNotValidException): ResponseEntity<ErrorResponse> {
+        logger.warn("MethodArgumentNotValidException")
+        val detail = e.bindingResult.fieldErrors.joinToString("; ")
+            { "${it.field}: ${it.defaultMessage}" }
+        return buildResponse(HttpStatus.BAD_REQUEST, "VALIDATION_FAILED", detail)
+    }
+
     fun buildResponse(
         status: HttpStatus,
         errorCode: String,
