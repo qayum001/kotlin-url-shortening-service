@@ -22,7 +22,7 @@ services:
     image: quay.io/keycloak/keycloak:26.0
     container_name: mock-keycloak
     restart: unless-stopped
-    command: start-dev
+    command: start-dev --import-realm
     environment:
       KC_BOOTSTRAP_ADMIN_USERNAME: admin
       KC_BOOTSTRAP_ADMIN_PASSWORD: admin
@@ -30,10 +30,9 @@ services:
       KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
       KC_DB_USERNAME: postgres
       KC_DB_PASSWORD: postgres
-      # Pin the public frontend URL so tokens always carry a stable issuer
-      # (http://localhost:8083/realms/mock) whether the token endpoint is hit by
-      # the browser or by the web container proxying to keycloak:8080 internally.
       KC_HOSTNAME: http://localhost:8083
+    volumes:
+      - ./keycloak:/opt/keycloak/data/import:ro
     ports:
       - "8083:8080"
     depends_on:
@@ -50,8 +49,6 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/mock
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: postgres
-      # Validate the issuer the browser's tokens carry, but fetch signing keys
-      # from Keycloak over the internal network (localhost:8083 is unreachable here).
       SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://localhost:8083/realms/mock
       SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://keycloak:8080/realms/mock/protocol/openid-connect/certs
     ports:

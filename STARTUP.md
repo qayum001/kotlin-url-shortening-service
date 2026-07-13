@@ -15,6 +15,10 @@ Keycloak (auth) and PostgreSQL, all wired together with Docker Compose.
 
 Public redirect endpoint: `http://localhost:8080/{code}` (no auth).
 
+Keycloak comes pre-provisioned: the `mock` realm, the `mock-api` client, and a dev
+user **`testuser` / `testpassword`** are auto-imported on a fresh start — no manual
+setup. Details in [keycloak/README.md](keycloak/README.md).
+
 ---
 
 ## First-time clone
