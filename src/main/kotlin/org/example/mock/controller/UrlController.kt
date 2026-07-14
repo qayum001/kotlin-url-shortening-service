@@ -7,6 +7,7 @@ import org.example.mock.entity.Url
 import org.example.mock.service.UrlService
 import org.example.mock.service.UserService
 import org.springframework.http.HttpStatus
+import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.security.oauth2.jwt.Jwt
@@ -53,6 +54,16 @@ class UrlController(
         @Valid @RequestBody request: UpdateUrlRequest
     ): ResponseEntity<Url> {
         return ResponseEntity.status(HttpStatus.OK).body(urlService.updateShortUrl(currentUserId(jwt), code, request.url))
+    }
+
+    @GetMapping("/{code}/qr", produces = ["image/svg+xml"])
+    fun getQr(
+        @AuthenticationPrincipal jwt: Jwt,
+        @PathVariable code: String
+    ): ResponseEntity<String> {
+        return ResponseEntity.ok()
+            .contentType(MediaType.valueOf("image/svg+xml"))
+            .body(urlService.qrForCode(currentUserId(jwt), code))
     }
 
     @GetMapping("/{code}/stats")

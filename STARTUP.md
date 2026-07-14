@@ -19,6 +19,14 @@ Keycloak comes pre-provisioned: the `mock` realm, the `mock-api` client, and a d
 user **`testuser` / `testpassword`** are auto-imported on a fresh start — no manual
 setup. Details in [keycloak/README.md](keycloak/README.md).
 
+QR code for a short code (owner-only, returns SVG): `GET /url/{code}/qr`. It encodes
+`{APP_BASE_URL}/{code}`. When sharing via **ngrok** (tunnel pointed at the backend on
+`:8080`), set `APP_BASE_URL` to the tunnel URL so scanned codes resolve:
+
+```bash
+APP_BASE_URL=https://xxxx.ngrok-free.app docker compose up -d app
+```
+
 ---
 
 ## First-time clone

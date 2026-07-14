@@ -19,6 +19,7 @@ object RandomCode {
 class UrlService(
     private val repository: UrlRepository,
     private val userRepository: UserRepository,
+    private val qrService: QrService,
 ) {
     companion object {
         private const val CODE_LENGTH = 6
@@ -51,6 +52,12 @@ class UrlService(
         validateCode(code)
         verifyOwnership(userId, code)
         return repository.getByCode(code)
+    }
+
+    fun qrForCode(userId: Long, code: String): String {
+        validateCode(code)
+        verifyOwnership(userId, code)
+        return qrService.svgForCode(code)
     }
 
     fun updateShortUrl(userId: Long, code: String, newUrl: String): Url {
