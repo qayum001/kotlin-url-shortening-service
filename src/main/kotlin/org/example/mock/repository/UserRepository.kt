@@ -1,52 +1,56 @@
 package org.example.mock.repository
 
+import io.r2dbc.spi.Readable
 import org.example.mock.entity.User
 import org.example.mock.entity.UserUrl
-import org.springframework.jdbc.core.RowMapper
-import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate
+import org.springframework.r2dbc.core.DatabaseClient
 import org.springframework.stereotype.Repository
+import reactor.core.publisher.Mono
+import java.time.OffsetDateTime
 import java.util.UUID
 
 @Repository
-class UserRepository(private val jdbc: NamedParameterJdbcTemplate) {
+class UserRepository(private val dbClient: DatabaseClient) {
 
-    private val rowMapper = RowMapper { rs, _ ->
+    private fun mapUser(row: Readable): User =
         User(
-            id = rs.getLong("id"),
-            name = rs.getString("name"),
-            username = rs.getString("username"),
-            createdAt = rs.getTimestamp("created_at").toInstant(),
-            updatedAt = rs.getTimestamp("updated_at").toInstant(),
+            id = row.get("id", Long::class.javaObjectType)!!,
+            name = row.get("name", String::class.java),
+            username = row.get("username", String::class.java)!!,
+            createdAt = row.get("created_at", OffsetDateTime::class.java)!!.toInstant(),
+            updatedAt = row.get("updated_at", OffsetDateTime::class.java)!!.toInstant(),
         )
-    }
 
-    private val userUrlMapper = RowMapper { rs, _ ->
-        UserUrl(
-            userId = rs.getLong("user_id"),
-            urlId = rs.getLong("url_id"),
-        )
-    }
-
-    fun findOrCreate(keycloakId: UUID, username: String, name: String?): User =
-        jdbc.queryForObject(
+    fun findOrCreate(keycloakId: UUID, username: String, name: String?): Mono<User> {
+        val spec = dbClient.sql(
             """
-            INSERT INTO users (keycloak_id, username, name)
-            VALUES (:kcId, :username, :name)
-            ON CONFLICT (keycloak_id) DO UPDATE
-                SET username = EXCLUDED.username, updated_at = now()
-            RETURNING id, keycloak_id, username, name, created_at, updated_at
-            """,
-            mapOf("kcId" to keycloakId, "username" to username, "name" to name),
-            rowMapper
-        )
+                INSERT INTO users (keycloak_id, username, name)
+                VALUES (:kcId, :username, :name)
+                ON CONFLICT (keycloak_id) DO UPDATE
+                    SET username = EXCLUDED.username, updated_at = now()
+                RETURNING id, keycloak_id, username, name, created_at, updated_at
+            """)
+            .bind("kcId", keycloakId)
+            .bind("username", username)
+        val bound = if (name != null) spec.bind("name", name)
+                    else spec.bindNull("name", String::class.java)
+        return bound.map { row -> mapUser(row) }.one()
+    }
 
-    fun connectUrlToUser(userId: Long, urlId: Long): UserUrl =
-        jdbc.queryForObject(
+    fun connectUrlToUser(userId: Long, urlId: Long): Mono<UserUrl> =
+        dbClient.sql(
             """
                 INSERT INTO user_urls (user_id, url_id)
                 VALUES (:userId, :urlId)
                 RETURNING user_id, url_id
-            """, mapOf("userId" to userId, "urlId" to urlId),
-            userUrlMapper
-        )
+            """)
+            .bind("userId", userId)
+            .bind("urlId", urlId)
+            .map { row ->
+                UserUrl(
+                    userId = row.get("user_id", Long::class.javaObjectType)!!,
+                    urlId = row.get("url_id", Long::class.javaObjectType)!!,
+                )
+            }
+            .one()
 }

@@ -19,6 +19,8 @@ import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
+import reactor.core.publisher.Flux
+import reactor.core.publisher.Mono
 
 @RestController
 @RequestMapping("/url")
@@ -30,58 +32,63 @@ class UrlController(
     fun shortenUrl(
         @AuthenticationPrincipal jwt: Jwt,
         @Valid @RequestBody request: CreateShortUrlRequest
-    ): ResponseEntity<Url> {
-        return ResponseEntity.status(HttpStatus.CREATED).body(urlService.shortenUrl(request.url, currentUserId(jwt)))
-    }
+    ): Mono<ResponseEntity<Url>> =
+        currentUserId(jwt)
+            .flatMap { userId -> urlService.shortenUrl(request.url, userId) }
+            .map { url -> ResponseEntity.status(HttpStatus.CREATED).body(url) }
 
     @GetMapping
-    fun listMyUrls(@AuthenticationPrincipal jwt: Jwt): ResponseEntity<List<Url>> {
-        return ResponseEntity.status(HttpStatus.OK).body(urlService.listUserUrls(currentUserId(jwt)))
-    }
+    fun listMyUrls(@AuthenticationPrincipal jwt: Jwt): Flux<Url> =
+        currentUserId(jwt).flatMapMany { userId -> urlService.listUserUrls(userId) }
 
     @GetMapping("/{code}")
     fun getOriginalUrl(
         @AuthenticationPrincipal jwt: Jwt,
         @PathVariable code: String
-    ): ResponseEntity<String> {
-        return ResponseEntity.status(HttpStatus.OK).body(urlService.getUserUrl(currentUserId(jwt), code))
-    }
+    ): Mono<ResponseEntity<String>> =
+        currentUserId(jwt)
+            .flatMap { userId -> urlService.getUserUrl(userId, code) }
+            .map { ResponseEntity.ok(it) }
 
     @PutMapping("/update/{code}")
     fun updateUrl(
         @AuthenticationPrincipal jwt: Jwt,
         @PathVariable code: String,
         @Valid @RequestBody request: UpdateUrlRequest
-    ): ResponseEntity<Url> {
-        return ResponseEntity.status(HttpStatus.OK).body(urlService.updateShortUrl(currentUserId(jwt), code, request.url))
-    }
+    ): Mono<ResponseEntity<Url>> =
+        currentUserId(jwt)
+            .flatMap { userId -> urlService.updateShortUrl(userId, code, request.url) }
+            .map { ResponseEntity.ok(it) }
 
     @GetMapping("/{code}/qr", produces = ["image/svg+xml"])
     fun getQr(
         @AuthenticationPrincipal jwt: Jwt,
         @PathVariable code: String
-    ): ResponseEntity<String> {
-        return ResponseEntity.ok()
-            .contentType(MediaType.valueOf("image/svg+xml"))
-            .body(urlService.qrForCode(currentUserId(jwt), code))
-    }
+    ): Mono<ResponseEntity<String>> =
+        currentUserId(jwt)
+            .flatMap { userId -> urlService.qrForCode(userId, code) }
+            .map { svg ->
+                ResponseEntity.ok().contentType(MediaType.valueOf("image/svg+xml")).body(svg)
+            }
 
     @GetMapping("/{code}/stats")
     fun getStats(
         @AuthenticationPrincipal jwt: Jwt,
         @PathVariable code: String
-    ): ResponseEntity<Url> {
-        return ResponseEntity.status(HttpStatus.OK).body(urlService.getUrlAccessesCount(currentUserId(jwt), code))
-    }
+    ): Mono<ResponseEntity<Url>> =
+        currentUserId(jwt)
+            .flatMap { userId -> urlService.getUrlAccessesCount(userId, code) }
+            .map { ResponseEntity.ok(it) }
 
     @DeleteMapping("/{code}")
     fun deleteUrl(
         @AuthenticationPrincipal jwt: Jwt,
         @PathVariable code: String
-    ): ResponseEntity<Void> {
-        urlService.deleteUrl(currentUserId(jwt), code)
-        return ResponseEntity.status(HttpStatus.NO_CONTENT).build()
-    }
+    ): Mono<ResponseEntity<Void>> =
+        currentUserId(jwt)
+            .flatMap { userId -> urlService.deleteUrl(userId, code) }
+            .thenReturn(ResponseEntity.noContent().build())
 
-    private fun currentUserId(jwt: Jwt): Long = userService.resolveKeycloakUser(jwt).id
+    private fun currentUserId(jwt: Jwt): Mono<Long> =
+        userService.resolveKeycloakUser(jwt).map { it.id }
 }

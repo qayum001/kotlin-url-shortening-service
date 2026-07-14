@@ -8,17 +8,21 @@ spring:
         jwt:
           issuer-uri: http://localhost:8083/realms/mock
 
+  # Reactive connection the APP uses at runtime (R2DBC, non-blocking).
+  r2dbc:
+    url: r2dbc:postgresql://${DB_HOST:localhost}:5432/mock
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+    pool:
+      initial-size: 2
+      max-size: 10
+
+  # Blocking JDBC connection used ONLY by Flyway at startup (not by the app).
   datasource:
-    url: jdbc:postgresql://localhost:5432/mock
+    url: jdbc:postgresql://${DB_HOST:localhost}:5432/mock
     username: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver
-    hikari:
-      maximum-pool-size: 10
-      minimum-idle: 2
-      connection-timeout: 30000
-      idle-timeout: 600000
-      max-lifetime: 1800000
 
   flyway:
     enabled: true

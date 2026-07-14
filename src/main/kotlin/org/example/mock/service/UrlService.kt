@@ -3,10 +3,12 @@ package org.example.mock.service
 import org.example.mock.entity.Url
 import org.example.mock.exceptions.InvalidCodeException
 import org.example.mock.exceptions.UrlNotFoundException
-import org.example.mock.repository.UrlRepository
+import org.example.mock.repository.UrlRepositoryReactive
 import org.example.mock.repository.UserRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import reactor.core.publisher.Flux
+import reactor.core.publisher.Mono
 
 object RandomCode {
     private const val CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
@@ -17,9 +19,9 @@ object RandomCode {
 
 @Service
 class UrlService(
-    private val repository: UrlRepository,
     private val userRepository: UserRepository,
     private val qrService: QrService,
+    private val repository: UrlRepositoryReactive,
 ) {
     companion object {
         private const val CODE_LENGTH = 6
@@ -27,72 +29,58 @@ class UrlService(
     }
 
     @Transactional
-    fun shortenUrl(originalUrl: String, userId: Long): Url {
-        repository.findByUserIdAndOriginalUrl(userId, originalUrl)?.let { return it }
+    fun shortenUrl(originalUrl: String, userId: Long): Mono<Url> =
+        repository.findByUserIdAndOriginalUrl(userId, originalUrl)
+            .switchIfEmpty(Mono.defer {
+                generateUniqueCode().flatMap { code ->
+                    repository.insert(originalUrl, code).flatMap { saved ->
+                        userRepository.connectUrlToUser(userId, saved.id).thenReturn(saved)
+                    }
+                }
+            })
 
-        val uniqueCode = generateUniqueCode()
-        val url = repository.insert(originalUrl, uniqueCode)
-        userRepository.connectUrlToUser(userId, url.id)
-        return url
-    }
+    fun listUserUrls(userId: Long): Flux<Url> = repository.findAllByUserId(userId)
 
-    fun listUserUrls(userId: Long): List<Url> = repository.findAllByUserId(userId)
+    fun resolveForRedirect(code: String): Mono<String> =
+        repository.getByCode(code)
+            .switchIfEmpty(Mono.error(UrlNotFoundException(code)))
+            .flatMap { target -> repository.incrementAccessCount(code).thenReturn(target) }
 
-    fun resolveForRedirect(code: String): String {
+    fun getUserUrl(userId: Long, code: String): Mono<String> {
         validateCode(code)
-        if (!repository.isExistsByCode(code)) {
-            throw UrlNotFoundException(code)
-        }
-        val target = repository.getByCode(code)
-        repository.incrementAccessCount(code)
-        return target
+        return verifyOwnership(userId, code).then(repository.getByCode(code))
     }
 
-    fun getUserUrl(userId: Long, code: String): String {
+    fun qrForCode(userId: Long, code: String): Mono<String> {
         validateCode(code)
-        verifyOwnership(userId, code)
-        return repository.getByCode(code)
+        return verifyOwnership(userId, code).then(Mono.fromCallable { qrService.svgForCode(code) })
     }
 
-    fun qrForCode(userId: Long, code: String): String {
+    fun updateShortUrl(userId: Long, code: String, newUrl: String): Mono<Url> {
         validateCode(code)
-        verifyOwnership(userId, code)
-        return qrService.svgForCode(code)
+        return verifyOwnership(userId, code).then(repository.updateUrl(code, newUrl))
     }
 
-    fun updateShortUrl(userId: Long, code: String, newUrl: String): Url {
+    fun getUrlAccessesCount(userId: Long, code: String): Mono<Url> {
         validateCode(code)
-        verifyOwnership(userId, code)
-        return repository.updateUrl(code, newUrl)
+        return verifyOwnership(userId, code).then(repository.getAccesses(code))
     }
 
-    fun getUrlAccessesCount(userId: Long, code: String): Url {
+    fun deleteUrl(userId: Long, code: String): Mono<Void> {
         validateCode(code)
-        verifyOwnership(userId, code)
-        return repository.getAccesses(code)
+        return verifyOwnership(userId, code).then(repository.delete(code).then())
     }
 
-    fun deleteUrl(userId: Long, code: String) {
-        validateCode(code)
-        verifyOwnership(userId, code)
-        repository.delete(code)
-    }
-
-    private fun verifyOwnership(userId: Long, code: String) {
-        if (!repository.isOwnedByUser(userId, code)) {
-            throw UrlNotFoundException(code)
-        }
-    }
-
-    private fun generateUniqueCode(): String {
-        while (true) {
-            val code = RandomCode.generate(CODE_LENGTH)
-            val isExists = repository.isExistsByCode(code)
-            if (!isExists) {
-                return code
+    private fun verifyOwnership(userId: Long, code: String): Mono<Void> =
+        repository.isOwnedByUser(userId, code)
+            .flatMap { owned ->
+                if (owned) Mono.empty() else Mono.error(UrlNotFoundException(code))
             }
-        }
-    }
+
+    private fun generateUniqueCode(): Mono<String> =
+        Mono.fromCallable { RandomCode.generate(CODE_LENGTH) }
+            .filterWhen { code -> repository.isExistsByCode(code).map { exists -> !exists } }
+            .repeatWhenEmpty { attempts -> attempts }
 
     private fun validateCode(code: String) {
         if (!CODE_REGEX.matches(code)) {

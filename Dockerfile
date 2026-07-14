@@ -4,14 +4,16 @@
 FROM eclipse-temurin:17-jdk AS build
 WORKDIR /app
 
-# Copy the wrapper + build scripts first so dependency resolution can be cached
+# Copy the wrapper + build scripts first so this layer is cached unless they change
 COPY gradlew settings.gradle build.gradle ./
 COPY gradle ./gradle
 RUN chmod +x gradlew
 
-# Build the executable (Spring Boot) jar, skipping tests
+# Build the executable (Spring Boot) jar, skipping tests.
+# The cache mount persists ~/.gradle (downloaded deps + build cache) across builds,
+# so rebuilds only recompile changed sources instead of re-downloading everything.
 COPY src ./src
-RUN ./gradlew --no-daemon clean bootJar -x test
+RUN --mount=type=cache,target=/root/.gradle ./gradlew --no-daemon bootJar -x test
 
 # ---- run stage ----
 FROM eclipse-temurin:17-jre
